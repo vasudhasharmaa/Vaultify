@@ -20,7 +20,7 @@ const getLocalHost = () => {
 
   if (Platform.OS === 'android') {
     // Android emulator -> host machine
-    return '10.0.2.2';
+    return '172.25.236.20';
   }
 
   // iOS simulator and physical devices on same network should use LAN host
