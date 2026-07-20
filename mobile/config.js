@@ -31,7 +31,5 @@ const host = getLocalHost();
 const API_PORT = 5001; // Backend runs on 5001 by default
 console.log('Vaultify API host:', host);
 export const API_BASE_URLS = [
-  `http://172.25.237.156:${API_PORT}`, // Direct LAN Wi-Fi IP to host machine (fast local testing)
-  `http://${host}:${API_PORT}`,       // Expo resolved host IP
   'https://vaultify-ii4q.onrender.com', // Deployed Render URL
 ];
