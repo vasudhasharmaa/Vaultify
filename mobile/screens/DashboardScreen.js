@@ -249,17 +249,25 @@ const DashboardScreen = ({ route, navigation }) => {
           </ScrollView>
         </View>
 
-        {/* Manuals warning banner */}
-        {manualsNeverOpenedCount > 0 && (
-          <View style={styles.warningBanner}>
-            <Ionicons name="book-outline" size={20} color="#c0392b" style={styles.warningIcon} />
-            <View style={styles.warningTextContainer}>
-              <Text style={styles.warningTitle}>Manuals Never Opened</Text>
-              <Text style={styles.warningDesc}>
-                You have {manualsNeverOpenedCount} product manuals never opened. Use the Gemini AI Assistant on product passports to ask questions instantly.
-              </Text>
+        {/* Manuals Banner */}
+        {productsList.length > 0 && (
+          <TouchableOpacity
+            style={styles.manualsBanner}
+            onPress={() => navigation.navigate('ProductManuals', { user, token, products: productsList })}
+          >
+            <View style={styles.manualsBannerLeft}>
+              <View style={styles.manualsIconContainer}>
+                <Ionicons name="book" size={22} color="#fff" />
+              </View>
+              <View style={styles.manualsTextContainer}>
+                <Text style={styles.manualsBannerTitle}>Digital Product Manuals</Text>
+                <Text style={styles.manualsBannerDesc}>
+                  Instantly fetch setup & troubleshooting guides for any vault product using Gemini AI.
+                </Text>
+              </View>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={20} color="#3b82f6" />
+          </TouchableOpacity>
         )}
 
         {/* Action Controls */}
@@ -470,32 +478,49 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 4,
   },
-  warningBanner: {
+  manualsBanner: {
     flexDirection: 'row',
-    backgroundColor: '#fdf2f2',
-    borderColor: '#fde8e8',
+    backgroundColor: '#eff6ff',
+    borderColor: '#bfdbfe',
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     marginHorizontal: 20,
     marginTop: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#3b82f6',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  warningIcon: {
-    marginRight: 10,
-    marginTop: 2,
-  },
-  warningTextContainer: {
+  manualsBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
-  warningTitle: {
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#c0392b',
+  manualsIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  manualsTextContainer: {
+    flex: 1,
+  },
+  manualsBannerTitle: {
+    fontWeight: '800',
+    fontSize: 15,
+    color: '#1e3a8a',
     marginBottom: 2,
   },
-  warningDesc: {
+  manualsBannerDesc: {
     fontSize: 12,
-    color: '#7f8c8d',
+    color: '#475569',
     lineHeight: 16,
   },
   quickActions: {

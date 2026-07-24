@@ -11,8 +11,9 @@ async function callGemini(prompt, base64Image = null, mimeType = null) {
     throw new Error('Gemini API key is not configured');
   }
 
-  // Use Gemini 1.5 Flash
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  // Use latest Gemini Flash model
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+
 
   let contents = [];
   if (base64Image && mimeType) {
@@ -116,13 +117,15 @@ router.post('/ocr', auth, async (req, res) => {
         const responseText = await callGemini(ocrPrompt, base64Data, mimeType);
         console.log('Gemini response:', responseText);
 
-        // Remove markdown tags if Gemini accidentally wrapped it
+        // Extract the raw JSON block using regex to handle any surrounding text or markdown formatting
         let cleanJsonStr = responseText.trim();
-        if (cleanJsonStr.startsWith('```')) {
-          cleanJsonStr = cleanJsonStr.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+        const jsonMatch = cleanJsonStr.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleanJsonStr = jsonMatch[0];
         }
 
         extractedData = JSON.parse(cleanJsonStr);
+
       } catch (geminiError) {
         console.warn('Gemini OCR failed, falling back to mock extraction:', geminiError.message);
       }
@@ -607,4 +610,113 @@ router.post('/:id/ask-manual', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/products/:id/fetch-manual
+// @desc    Generate a user manual/quick-start guide for the product using Gemini API
+// @access  Private
+router.get('/:id/fetch-manual', auth, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Check permissions
+    const isOwner = product.owner.toString() === req.user.id;
+    const isShared = product.sharedWith.some((id) => id.toString() === req.user.id);
+    if (!isOwner && !isShared) {
+      return res.status(403).json({ message: 'Not authorized to fetch manual for this product' });
+    }
+
+    const prompt = `
+      You are Vaultify's AI Manual Generator.
+      Generate a comprehensive and structured Quick-Start Manual and User Guide for the following product:
+      Product Name: "${product.name}"
+      Category: "${product.category}"
+      
+      The manual MUST contain exactly these sections, formatted in clean, professional markdown:
+      # Quick-Start Manual: ${product.name}
+      
+      ### 1. Product Overview
+      Provide a brief 2-3 sentence description of the product and its primary purpose.
+      
+      ### 2. Key Features
+      List 3-4 notable features of the product with quick descriptions in a bullet list.
+      
+      ### 3. Quick Setup Instructions
+      Provide 4-5 numbered, step-by-step instructions on how to install, power up, connect, or pair the device.
+      
+      ### 4. Maintenance & Safety
+      Provide 3 key bullet points on keeping the product in optimal condition.
+      
+      ### 5. Troubleshooting Guide
+      List 3 common issues and how to fix them.
+      
+      Use headers, bullet points, and numbers for readability. Keep it concise, clear, and professional.
+      If you do not have specific data for this exact model, provide standard, highly helpful instructions for a similar ${product.category} product.
+    `;
+
+    let manualText = '';
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        console.log(`Generating manual for ${product.name} using Gemini API...`);
+        manualText = await callGemini(prompt);
+      } catch (geminiError) {
+        console.warn('Gemini manual generation failed:', geminiError.message);
+      }
+    }
+
+    if (!manualText) {
+      console.log('Using simulated/mock manual...');
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      manualText = `
+# Quick-Start Manual: ${product.name}
+
+Welcome to the digital user guide for your **${product.name}**. Below you will find setup, usage, maintenance, and troubleshooting steps.
+
+---
+
+### 1. Product Overview
+The **${product.name}** is a premium device in the **${product.category}** category designed to deliver exceptional performance, reliability, and modern convenience.
+
+### 2. Key Features
+- **Modern Interface**: Designed for user-friendly navigation and controls.
+- **Smart Connectivity**: Integrates seamlessly with modern ecosystems.
+- **High Durability**: Built with premium materials to stand the test of time.
+
+### 3. Quick Setup Instructions
+1. **Unbox**: Carefully remove all packaging materials and inspect the device.
+2. **Power Connection**: Plug the device into a standard power outlet or verify battery charge.
+3. **Turn On**: Press and hold the power button for 3 seconds until the indicator light illuminates.
+4. **Configuration**: Follow standard pairing/configuration instructions (e.g. Wi-Fi connection, Bluetooth pairing, or companion app download).
+5. **Ready to Use**: Run a quick diagnostic test to confirm standard operations.
+
+### 4. Maintenance & Safety
+- **Cleanliness**: Wipe down the outer surface with a soft, dry cloth. Avoid abrasive cleaners.
+- **Storage**: Store in a cool, dry place away from direct sunlight or moisture.
+- **Safety First**: Do not attempt to open the main body containing internal circuitry.
+
+### 5. Troubleshooting Guide
+- **Issue**: Device does not turn on.
+  - **Solution**: Check power cables or charge the battery for at least 30 minutes.
+- **Issue**: Connection failure.
+  - **Solution**: Restart the device and your router/phone. Turn Bluetooth/Wi-Fi off and back on.
+- **Issue**: Low performance.
+  - **Solution**: Ensure the latest firmware is installed and wipe away any accumulated dust.
+      `;
+    }
+
+    // Update neverOpened flag if this is the first time the manual is retrieved
+    if (product.manual && product.manual.neverOpened) {
+      product.manual.neverOpened = false;
+      await product.save();
+    }
+
+    res.json({ manual: manualText });
+  } catch (error) {
+    console.error('Fetch manual error:', error);
+    res.status(500).json({ message: 'Error generating manual' });
+  }
+});
+
 module.exports = router;
+

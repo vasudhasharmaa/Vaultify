@@ -11,6 +11,7 @@ import ProductVerificationScreen from './screens/ProductVerificationScreen';
 import ProductPassportScreen from './screens/ProductPassportScreen';
 import TransferRequestsScreen from './screens/TransferRequestsScreen';
 import UserProfileScreen from './screens/UserProfileScreen';
+import ProductManualsScreen from './screens/ProductManualsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -28,6 +29,7 @@ export default function App() {
         <Stack.Screen name="ProductPassport" component={ProductPassportScreen} options={{ title: 'Product Passport' }} />
         <Stack.Screen name="TransferRequests" component={TransferRequestsScreen} options={{ title: 'Pending Transfers' }} />
         <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'My Profile' }} />
+        <Stack.Screen name="ProductManuals" component={ProductManualsScreen} options={{ title: 'Product Manuals' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
