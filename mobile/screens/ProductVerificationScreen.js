@@ -9,6 +9,7 @@ import {
   Alert,
   SafeAreaView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { post } from '../api';
@@ -79,8 +80,22 @@ const ProductVerificationScreen = ({ route, navigation }) => {
           </Text>
         </View>
 
+        {receiptImage && receiptImage !== 'MOCK_DEMO_RECEIPT_URI' && (
+          <View style={styles.receiptPreviewContainer}>
+            <Text style={styles.previewLabel}>Scanned Receipt Image</Text>
+            <View style={styles.receiptImageWrapper}>
+              <Image 
+                source={{ uri: receiptImage }} 
+                style={styles.receiptPreviewImage} 
+                resizeMode="contain"
+              />
+            </View>
+          </View>
+        )}
+
         {/* Input Form */}
         <View style={styles.formCard}>
+
           <Text style={styles.inputLabel}>Product Name</Text>
           <View style={styles.inputContainer}>
             <Ionicons name="cube-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
@@ -288,6 +303,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 8,
   },
+  receiptPreviewContainer: {
+    backgroundColor: '#fff',
+    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  previewLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 10,
+  },
+  receiptImageWrapper: {
+    height: 200,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  receiptPreviewImage: {
+    width: '100%',
+    height: '100%',
+  },
 });
 
 export default ProductVerificationScreen;
+

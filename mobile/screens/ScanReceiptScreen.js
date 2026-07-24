@@ -19,6 +19,7 @@ const ScanReceiptScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedBase64, setSelectedBase64] = useState(null);
 
   const requestPermissions = async () => {
     const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
@@ -50,6 +51,10 @@ const ScanReceiptScreen = ({ route, navigation }) => {
 
       const { data } = response.data;
       setLoading(false);
+      // Reset state so screen is fresh next time
+      setSelectedImage(null);
+      setSelectedBase64(null);
+
       // Navigate to product verification form
       navigation.navigate('ProductVerification', {
         extractedData: data,
@@ -73,15 +78,15 @@ const ScanReceiptScreen = ({ route, navigation }) => {
 
     try {
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        quality: 0.7,
+        allowsEditing: false,
+        quality: 0.8,
         base64: true,
       });
 
       if (!result.canceled && result.assets?.[0]) {
         const asset = result.assets[0];
         setSelectedImage(asset.uri);
-        processOcr(asset.base64);
+        setSelectedBase64(asset.base64);
       }
     } catch (error) {
       console.error('Camera error:', error);
@@ -95,15 +100,15 @@ const ScanReceiptScreen = ({ route, navigation }) => {
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        allowsEditing: true,
-        quality: 0.7,
+        allowsEditing: false,
+        quality: 0.8,
         base64: true,
       });
 
       if (!result.canceled && result.assets?.[0]) {
         const asset = result.assets[0];
         setSelectedImage(asset.uri);
-        processOcr(asset.base64);
+        setSelectedBase64(asset.base64);
       }
     } catch (error) {
       console.error('Gallery error:', error);
@@ -115,11 +120,11 @@ const ScanReceiptScreen = ({ route, navigation }) => {
   const handleSelectDemoReceipt = async (receiptType) => {
     setLoading(true);
     setStatusMessage('Simulating receipt upload...');
-    
+
     // Simulate API request to fallback parser
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      
+
       const response = await post('/api/products/ocr', { receiptImage: 'MOCK_IMAGE_DATA' }, token);
       let data = response.data.data;
 
@@ -174,6 +179,45 @@ const ScanReceiptScreen = ({ route, navigation }) => {
       </View>
     );
   }
+
+  if (selectedImage) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.previewContainer}>
+          <View>
+            <Text style={styles.previewHeading}>Confirm Receipt Image</Text>
+            <Text style={styles.previewSub}>Ensure the receipt details are clear and legible before submitting.</Text>
+          </View>
+
+          <View style={styles.imageContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.previewImage} resizeMode="contain" />
+          </View>
+
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={() => processOcr(selectedBase64)}
+            >
+              <Ionicons name="cloud-upload-outline" size={22} color="#fff" />
+              <Text style={styles.submitButtonText}>Upload Receipt</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.retakeButton}
+              onPress={() => {
+                setSelectedImage(null);
+                setSelectedBase64(null);
+              }}
+            >
+              <Ionicons name="refresh-outline" size={20} color="#64748b" />
+              <Text style={styles.retakeButtonText}>Retake / Choose Another</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -380,6 +424,85 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     marginTop: 2,
   },
+  previewContainer: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'space-between',
+    backgroundColor: '#f8fafc',
+  },
+  previewHeading: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  previewSub: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  imageContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+    marginBottom: 24,
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  buttonGroup: {
+    width: '100%',
+    gap: 12,
+  },
+  submitButton: {
+    backgroundColor: '#2f80ed',
+    height: 52,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#2f80ed',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  retakeButton: {
+    backgroundColor: '#fff',
+    borderColor: '#cbd5e1',
+    borderWidth: 1,
+    height: 52,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  retakeButtonText: {
+    color: '#64748b',
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
 });
 
 export default ScanReceiptScreen;
+
+
+
