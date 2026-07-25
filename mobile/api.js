@@ -23,7 +23,7 @@ const request = async (method, path, data = null, token = null) => {
         method,
         url: `${baseUrl}${path}`,
         headers: getHeaders(token),
-        timeout: 15000,
+        timeout: 60000,
       };
       if (data) {
         config.data = data;

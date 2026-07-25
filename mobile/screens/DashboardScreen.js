@@ -194,17 +194,17 @@ const DashboardScreen = ({ route, navigation }) => {
           <Text style={styles.userText}>{user?.name || 'Vaultify User'}</Text>
         </View>
         <View style={styles.headerActions}>
-          {pendingTransfersCount > 0 && (
-            <TouchableOpacity
-              style={styles.badgeIconButton}
-              onPress={() => navigation.navigate('TransferRequests', { user, token })}
-            >
-              <MaterialCommunityIcons name="transfer" size={24} color="#2f80ed" />
+          <TouchableOpacity
+            style={styles.badgeIconButton}
+            onPress={() => navigation.navigate('TransferRequests', { user, token })}
+          >
+            <MaterialCommunityIcons name="transfer" size={24} color="#2f80ed" />
+            {pendingTransfersCount > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{pendingTransfersCount}</Text>
               </View>
-            </TouchableOpacity>
-          )}
+            )}
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { user, token, products })}>
             <Ionicons name="person-circle-outline" size={32} color="#4f5d75" />
           </TouchableOpacity>

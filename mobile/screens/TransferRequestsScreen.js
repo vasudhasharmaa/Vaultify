@@ -33,8 +33,11 @@ const TransferRequestsScreen = ({ route, navigation }) => {
     fetchPendingTransfers();
   }, []);
 
-  const handleResponse = async (transferId, action) => {
-    const actionText = action === 'accept' ? 'accept ownership of' : 'decline';
+  const handleResponse = async (transfer, action) => {
+    const isShare = transfer.type === 'share';
+    const actionText = action === 'accept'
+      ? (isShare ? 'accept shared access to' : 'accept ownership of')
+      : 'decline';
     Alert.alert(
       'Confirm Action',
       `Are you sure you want to ${actionText} this product?`,
@@ -46,7 +49,7 @@ const TransferRequestsScreen = ({ route, navigation }) => {
           onPress: async () => {
             setLoading(true);
             try {
-              const res = await post(`/api/transfers/${transferId}/respond`, { action }, token);
+              const res = await post(`/api/transfers/${transfer._id}/respond`, { action }, token);
               Alert.alert('Processed', res.data.message);
               fetchPendingTransfers();
             } catch (error) {
@@ -61,63 +64,82 @@ const TransferRequestsScreen = ({ route, navigation }) => {
   };
 
   const renderTransferItem = ({ item }) => {
+    const isShare = item.type === 'share';
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={styles.iconContainer}>
-            <MaterialCommunityIcons name="passport" size={24} color="#2f80ed" />
+          <View style={[styles.iconContainer, isShare && { backgroundColor: '#fef5ec' }]}>
+            <MaterialCommunityIcons 
+              name={isShare ? "share-variant" : "passport"} 
+              size={24} 
+              color={isShare ? "#f2994a" : "#2f80ed"} 
+            />
           </View>
           <View style={styles.headerInfo}>
             <Text style={styles.productName}>{item.product?.name || 'Unknown Product'}</Text>
-            <Text style={styles.category}>{item.product?.category || 'General'}</Text>
+            <Text style={styles.category}>
+              {item.product?.category || 'General'} {isShare && '• Shared Access'}
+            </Text>
           </View>
         </View>
 
         <View style={styles.detailsSection}>
-          <Text style={styles.sectionTitle}>Transfer Details:</Text>
+          <Text style={styles.sectionTitle}>{isShare ? "Share Details:" : "Transfer Details:"}</Text>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Seller:</Text>
+            <Text style={styles.detailLabel}>{isShare ? "Sender:" : "Seller:"}</Text>
             <Text style={styles.detailVal}>
               {item.sender?.name} ({item.sender?.email})
             </Text>
           </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Years Owned:</Text>
-            <Text style={styles.detailVal}>{item.yearsOwned} Years</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Repairs Completed:</Text>
-            <Text style={styles.detailVal}>{item.repairsCount} Repairs</Text>
-          </View>
-          {item.partsReplaced ? (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Parts Replaced:</Text>
-              <Text style={styles.detailVal}>{item.partsReplaced}</Text>
-            </View>
-          ) : null}
-          {item.notes ? (
+          
+          {!isShare ? (
+            <>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Years Owned:</Text>
+                <Text style={styles.detailVal}>{item.yearsOwned} Years</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Repairs Completed:</Text>
+                <Text style={styles.detailVal}>{item.repairsCount} Repairs</Text>
+              </View>
+              {item.partsReplaced ? (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Parts Replaced:</Text>
+                  <Text style={styles.detailVal}>{item.partsReplaced}</Text>
+                </View>
+              ) : null}
+              {item.notes ? (
+                <View style={styles.notesContainer}>
+                  <Text style={styles.notesLabel}>Seller Disclosures:</Text>
+                  <Text style={styles.notesText}>{item.notes}</Text>
+                </View>
+              ) : null}
+            </>
+          ) : (
             <View style={styles.notesContainer}>
-              <Text style={styles.notesLabel}>Seller Disclosures:</Text>
-              <Text style={styles.notesText}>{item.notes}</Text>
+              <Text style={styles.notesLabel}>Info:</Text>
+              <Text style={styles.notesText}>
+                Accepting this request lets you view this product passport, track its warranty claims, and log new repairs. The sender remains the owner.
+              </Text>
             </View>
-          ) : null}
+          )}
         </View>
 
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.button, styles.declineButton]}
-            onPress={() => handleResponse(item._id, 'reject')}
+            onPress={() => handleResponse(item, 'reject')}
           >
             <Ionicons name="close-circle-outline" size={16} color="#eb5757" />
             <Text style={styles.declineText}>Decline</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.acceptButton]}
-            onPress={() => handleResponse(item._id, 'accept')}
+            style={[styles.button, styles.acceptButton, isShare && { backgroundColor: '#f2994a' }]}
+            onPress={() => handleResponse(item, 'accept')}
           >
             <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
-            <Text style={styles.acceptText}>Accept Passport</Text>
+            <Text style={styles.acceptText}>{isShare ? "Accept Share" : "Accept Passport"}</Text>
           </TouchableOpacity>
         </View>
       </View>

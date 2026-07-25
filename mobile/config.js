@@ -20,7 +20,7 @@ const getLocalHost = () => {
 
   if (Platform.OS === 'android') {
     // Android emulator/device -> host machine
-    return '172.25.245.112';
+    return '172.25.246.1';
   }
 
 
@@ -32,7 +32,8 @@ const host = getLocalHost();
 const API_PORT = 5001; // Backend runs on 5001 by default
 console.log('Vaultify API host:', host);
 export const API_BASE_URLS = [
-  `http://${host}:${API_PORT}`, // Local development server
   'https://vaultify-ii4q.onrender.com', // Deployed Render URL
+  `http://${host}:${API_PORT}` // Local development server
+
 ];
 
