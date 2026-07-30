@@ -39,6 +39,11 @@ const transferRequestSchema = new mongoose.Schema(
       enum: ['pending', 'accepted', 'rejected'],
       default: 'pending',
     },
+    type: {
+      type: String,
+      enum: ['transfer', 'share'],
+      default: 'transfer',
+    },
   },
   {
     timestamps: true,

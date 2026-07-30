@@ -140,30 +140,55 @@ router.post('/:id/respond', auth, async (req, res) => {
     const senderUser = await User.findById(transferRequest.sender);
 
     if (action === 'accept') {
-      // Transfer product owner to recipient
-      const oldOwnerId = product.owner;
-      product.owner = req.user.id;
+      if (transferRequest.type === 'share') {
+        // Add recipient to product's sharedWith array if not already there
+        if (!product.sharedWith.some((id) => id.toString() === req.user.id)) {
+          product.sharedWith.push(req.user.id);
+        }
 
-      // Revoke any sharing to clean up permissions
-      product.sharedWith = product.sharedWith.filter((id) => id.toString() !== req.user.id);
+        // Record in product timeline
+        product.timeline.push({
+          event: 'Shared',
+          date: new Date(),
+          description: `Shared access accepted by ${user.name}.`,
+        });
 
-      // Record in product timeline
-      product.timeline.push({
-        event: 'Ownership Transferred',
-        date: new Date(),
-        description: `Ownership accepted by ${user.name}. Transferred from ${senderUser ? senderUser.name : 'previous owner'}. Product history: ${transferRequest.yearsOwned} years owned, ${transferRequest.repairsCount} repairs completed.`,
-      });
+        await product.save();
 
-      await product.save();
+        // Update request status
+        transferRequest.status = 'accepted';
+        await transferRequest.save();
 
-      // Update transfer request status
-      transferRequest.status = 'accepted';
-      await transferRequest.save();
+        res.json({
+          message: 'Product sharing accepted successfully',
+          product,
+        });
+      } else {
+        // Transfer product owner to recipient
+        const oldOwnerId = product.owner;
+        product.owner = req.user.id;
 
-      res.json({
-        message: 'Product ownership transfer accepted and completed successfully',
-        product,
-      });
+        // Revoke any sharing to clean up permissions
+        product.sharedWith = product.sharedWith.filter((id) => id.toString() !== req.user.id);
+
+        // Record in product timeline
+        product.timeline.push({
+          event: 'Ownership Transferred',
+          date: new Date(),
+          description: `Ownership accepted by ${user.name}. Transferred from ${senderUser ? senderUser.name : 'previous owner'}. Product history: ${transferRequest.yearsOwned} years owned, ${transferRequest.repairsCount} repairs completed.`,
+        });
+
+        await product.save();
+
+        // Update transfer request status
+        transferRequest.status = 'accepted';
+        await transferRequest.save();
+
+        res.json({
+          message: 'Product ownership transfer accepted and completed successfully',
+          product,
+        });
+      }
     } else {
       // Reject transfer request
       transferRequest.status = 'rejected';
@@ -171,13 +196,15 @@ router.post('/:id/respond', auth, async (req, res) => {
 
       // Log in product timeline
       product.timeline.push({
-        event: 'Ownership Transferred',
+        event: transferRequest.type === 'share' ? 'Shared' : 'Ownership Transferred',
         date: new Date(),
-        description: `Transfer request to ${user.name} was declined.`,
+        description: transferRequest.type === 'share'
+          ? `Share request to ${user.name} was declined.`
+          : `Transfer request to ${user.name} was declined.`,
       });
       await product.save();
 
-      res.json({ message: 'Product ownership transfer declined' });
+      res.json({ message: transferRequest.type === 'share' ? 'Product sharing declined' : 'Product ownership transfer declined' });
     }
   } catch (error) {
     console.error('Respond transfer error:', error);

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const User = require('../models/User');
+const TransferRequest = require('../models/TransferRequest');
 const auth = require('../middleware/auth');
 
 // Helper to make Gemini API requests using native fetch (Node 18+)
@@ -474,17 +475,43 @@ router.post('/:id/share', auth, async (req, res) => {
       return res.status(400).json({ message: 'Product is already shared with this user' });
     }
 
-    product.sharedWith.push(userToShareWith._id);
-
-    product.timeline.push({
-      event: 'Shared',
-      date: new Date(),
-      description: `Product access shared with ${userToShareWith.name} (${userToShareWith.email}).`,
+    // Check if there is already a pending transfer or share request
+    const existingPending = await TransferRequest.findOne({
+      product: product._id,
+      recipientEmail: email.toLowerCase(),
+      status: 'pending',
     });
 
-    await product.save();
+    if (existingPending) {
+      return res.status(400).json({
+        message: existingPending.type === 'share'
+          ? 'A sharing request is already pending for this user'
+          : 'An ownership transfer request is already pending for this user'
+      });
+    }
+
+    // Create a share request
+    const shareRequest = new TransferRequest({
+      product: product._id,
+      sender: req.user.id,
+      recipientEmail: email.toLowerCase(),
+      type: 'share',
+      status: 'pending',
+    });
+
+    await shareRequest.save();
+
+    // Simulated email console log
+    console.log(`\n--- [EMAIL SIMULATION] ---`);
+    console.log(`To: ${email.toLowerCase()}`);
+    console.log(`Subject: Vaultify - Product Share Request from ${req.user.name || 'a friend'}`);
+    console.log(`Content: Hello, ${userToShareWith.name || 'User'}!`);
+    console.log(`${req.user.name || 'Someone'} (${req.user.email}) wants to share access to their product '${product.name}' with you.`);
+    console.log(`Please open the Vaultify app and head to 'Pending Transfers' to accept or decline this share request.`);
+    console.log(`---------------------------\n`);
+
     res.json({
-      message: `Product successfully shared with ${userToShareWith.name}`,
+      message: `Share request sent to ${userToShareWith.name || email}. They must accept it before they can view the product.`,
       product,
     });
   } catch (error) {
