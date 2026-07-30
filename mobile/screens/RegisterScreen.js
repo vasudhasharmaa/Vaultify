@@ -16,8 +16,8 @@ const RegisterScreen = ({ navigation }) => {
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     expoClientId: GOOGLE_AUTH_CONFIG.expoClientId,
-    androidClientId: GOOGLE_AUTH_CONFIG.androidClientId,
-    iosClientId: GOOGLE_AUTH_CONFIG.iosClientId,
+    androidClientId: GOOGLE_AUTH_CONFIG.androidClientId && !GOOGLE_AUTH_CONFIG.androidClientId.includes('<') ? GOOGLE_AUTH_CONFIG.androidClientId : undefined,
+    iosClientId: GOOGLE_AUTH_CONFIG.iosClientId && !GOOGLE_AUTH_CONFIG.iosClientId.includes('<') ? GOOGLE_AUTH_CONFIG.iosClientId : undefined,
     webClientId: GOOGLE_AUTH_CONFIG.webClientId,
     scopes: GOOGLE_AUTH_CONFIG.scopes,
   });
