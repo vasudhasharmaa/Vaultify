@@ -23,10 +23,34 @@ const RegisterScreen = ({ navigation }) => {
   });
 
   React.useEffect(() => {
-    if (response?.type === 'success') {
-      Alert.alert('Google login', 'Signed in successfully.');
-      navigation.navigate('Dashboard', { user: { name: 'Google User', email: 'googleuser@example.com' } });
-    }
+    const handleGoogleLogin = async () => {
+      if (response?.type === 'success') {
+        const { authentication } = response;
+        const accessToken = authentication?.accessToken;
+        if (!accessToken) {
+          Alert.alert('Google Login Error', 'Could not retrieve access token.');
+          return;
+        }
+
+        setLoading(true);
+        try {
+          const res = await post('/api/auth/google', { token: accessToken });
+          const { token, user } = res.data;
+          navigation.navigate('Dashboard', { user, token });
+        } catch (error) {
+          console.error('Google login error:', error);
+          const message =
+            error.response?.data?.message ||
+            error.message ||
+            'Unable to login with Google.';
+          Alert.alert('Google Login Failed', message);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    handleGoogleLogin();
   }, [response]);
 
   const handleRegister = async () => {
@@ -82,7 +106,7 @@ const RegisterScreen = ({ navigation }) => {
         onChangeText={setPassword}
         secureTextEntry
       />
-      <TouchableOpacity style={styles.googleButton} onPress={() => promptAsync()} disabled={!request}>
+      <TouchableOpacity style={styles.googleButton} onPress={() => promptAsync()} disabled={!request || loading}>
         <FontAwesome name="google" size={20} color="#EA4335" />
         <Text style={styles.googleText}>Continue with Google</Text>
       </TouchableOpacity>
