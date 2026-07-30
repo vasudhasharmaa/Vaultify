@@ -69,6 +69,11 @@ const ProductPassportScreen = ({ route, navigation }) => {
   }, [productId]);
 
   const handleClaimWarranty = async () => {
+    if (product.warranty?.expiryDate && new Date(product.warranty.expiryDate) < new Date()) {
+      Alert.alert('Claim Blocked', 'This product warranty has already expired.');
+      return;
+    }
+
     if (product.warranty.warrantiesRemaining <= 0) {
       Alert.alert('Claim Blocked', 'No warranty claims remaining in this passport.');
       return;
@@ -88,7 +93,8 @@ const ProductPassportScreen = ({ route, navigation }) => {
               setProduct(res.data);
               Alert.alert('Claim Logged', 'Your warranty claim has been successfully updated on the timeline.');
             } catch (error) {
-              Alert.alert('Error', 'Could not claim warranty.');
+              const msg = error.response?.data?.message || 'Could not claim warranty.';
+              Alert.alert('Error', msg);
             } finally {
               setLoading(false);
             }
